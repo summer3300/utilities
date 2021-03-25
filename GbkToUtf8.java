@@ -15,61 +15,66 @@ public class GbkToUtf8 {
 	 * @throws IOException
 	 */
 	public static void main(String[] args) throws IOException {
-		Path startingDir = Paths.get("D:/xxx/src/main/java/com/");
-		Files.walkFileTree(startingDir, new FindJavaVisitor());
+//		Path startingDir = Paths.get("D:/xxx/src/main/java/com/");
+//		Files.walkFileTree(startingDir, new FindJavaVisitor());
+		
+		Path javaFile = Paths.get("D:\\xxx\\src\\main\\java\\com\\xxx.java");
+		changeCodec(javaFile);
 	}
 
 	private static class FindJavaVisitor extends SimpleFileVisitor<Path> {
 
 		@Override
 		public FileVisitResult visitFile(Path filePath, BasicFileAttributes attrs) {
-			try {
-				if (filePath.toString().endsWith(".java")) {
-					CharsetDecoder decoder = Charset.forName("GBK").newDecoder();
-					CharsetEncoder encoder = Charset.forName("UTF-8").newEncoder();
 
-					String srcFilePath =filePath.toFile().getPath();
-					System.out.println(srcFilePath);
-					File tmpFile = new File(srcFilePath+".tmp");
-					try {
-						BufferedReader br = new BufferedReader(
-								new InputStreamReader(new FileInputStream(filePath.toFile()), decoder));
-						BufferedWriter bw = new BufferedWriter(
-								new OutputStreamWriter(new FileOutputStream(tmpFile), encoder));
-						char[] buffer = new char[1024];
-						int read;
-						//idea's javaFile does not with BOM
-						//bw.write(BYTE_ORDER_MARK);
-						try {
-							while ((read = br.read(buffer)) != -1) {
-								bw.write(buffer, 0, read);
-							}
-						} catch (Exception e) {
-							e.printStackTrace();
-						}
-
-
-						br.close();
-						bw.close();
-					} catch (Exception e) {
-						e.printStackTrace();
-					}	
-					
-
-					CopyOption[] options = new CopyOption[]{
-						      StandardCopyOption.REPLACE_EXISTING
-						    };
-					
-					String tmpFilePath = tmpFile.getPath();
-					Files.delete(filePath);
-					Files.move( FileSystems.getDefault().getPath(tmpFilePath), FileSystems.getDefault().getPath(srcFilePath), options);
-				}
-
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-
+			changeCodec(filePath);
 			return FileVisitResult.CONTINUE;
 		}
 	}
+	
+	private static void changeCodec(Path filePath) {
+		try {
+			if (filePath.toString().endsWith(".java")) {
+				CharsetDecoder decoder = Charset.forName("GBK").newDecoder();
+				CharsetEncoder encoder = Charset.forName("UTF-8").newEncoder();
+
+				String srcFilePath =filePath.toFile().getPath();
+				System.out.println(srcFilePath);
+				File tmpFile = new File(srcFilePath+".tmp");
+				try(BufferedReader br = new BufferedReader(
+						new InputStreamReader(new FileInputStream(filePath.toFile()), decoder));
+				BufferedWriter bw = new BufferedWriter(
+						new OutputStreamWriter(new FileOutputStream(tmpFile), encoder));) {
+					
+					char[] buffer = new char[1024];
+					int read;
+					//idea's javaFile does not with BOM
+					//bw.write(BYTE_ORDER_MARK);
+					try {
+						
+						while ((read = br.read(buffer)) != -1) {
+							bw.write(buffer, 0, read);
+						}
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+
+				} catch (Exception e) {
+					e.printStackTrace();
+				}	
+
+				CopyOption[] options = new CopyOption[]{
+					      StandardCopyOption.REPLACE_EXISTING
+					    };
+				
+				String tmpFilePath = tmpFile.getPath();
+				Files.delete(filePath);
+				Files.move( FileSystems.getDefault().getPath(tmpFilePath), FileSystems.getDefault().getPath(srcFilePath), options);
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
 }
